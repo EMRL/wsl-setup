@@ -169,6 +169,7 @@ if yesno --default yes "Continue? [Y/n] "; then
     sudo service mysql stop
   fi
   sudo rm -rf //.cache
+  sudo apt-get install php-mysql
 fi
 
 # wp-cli
