@@ -131,7 +131,7 @@ fi
 if yesno --default yes "Continue? [Y/n] "; then
   sudo apt update
   sudo apt upgrade -y
-  sudo apt-get install build-essential gcc g++ make nodejs git composer npm
+  sudo apt-get install build-essential gcc g++ make nodejs git composer npm php-xml
 else
   exit
 fi
