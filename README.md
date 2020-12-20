@@ -7,7 +7,7 @@ This is just how we initially setup a WSL environment on our Windows wordkstatio
 ### Enable WSL
 - Open PowerShell tool as an Administrator 
 - ` dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart`
-- Enbale Virtual Machine Platform
+- Enable Virtual Machine Platform
 ` dism.exe /online /enable-feature /featurename:VirtualMachinePlatform /all /`
 - Reboot
 
