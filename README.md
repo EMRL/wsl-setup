@@ -30,3 +30,6 @@ This is just how we initially setup a WSL environment on our Windows wordkstatio
 
 ### Install and setup minimum development bits
 - Run script at https://github.com/EMRL/wsl-setup
+
+### Post-script notes
+For some weird reason, root password was not working when trying to run `mysql -u root -p` - after trying many different solutions that all failed, I resorted to using Webmin (which accepted root password fine) to re-saved the root password and everything works fine now. Weird shit.
