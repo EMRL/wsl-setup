@@ -19,7 +19,7 @@ This is just how we initially setup a WSL environment on our Windows wordkstatio
 - Update Kernel
 - Install from https://wslstorestorage.blob.core.windows.net/wslblob/wsl_update_x64.msi
 - Install a distro
-- Ubuntu 20.04 LTS https://www.microsoft.com/en-gb/p/ubuntu-2004-lts/9n6svws3rx71
+- Ubuntu 20.04 https://www.microsoft.com/en-us/p/ubuntu/9nblggh4msv6?activetab=pivot:overviewtab
 - Create user/password
 
 ### Install support apps
