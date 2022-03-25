@@ -2,7 +2,7 @@
 New and improved for WSL 2
 
 ## First steps
-This is just how we initially setup a WSL environment on our Windows wordkstations. There are probably better ways to do it.
+This is just how we initially setup a WSL environment on our Windows workstations. There are probably better ways to do it.
 
 ### Enable WSL
 - Open PowerShell tool as an Administrator 
