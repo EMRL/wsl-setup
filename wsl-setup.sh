@@ -124,6 +124,7 @@ if [[ -n "${OS}" ]] && [[ -n "${VER}" ]]; then
   echo -e "\nSetting up ${OS} ${VER}"
 else
   # No values, crash out for now
+  echo -e "\nUnkown OS version"
   exit 1
 fi
 
@@ -131,7 +132,7 @@ fi
 if yesno --default yes "Continue? [Y/n] "; then
   sudo apt update
   sudo apt upgrade -y
-  sudo apt-get install build-essential gcc g++ make nodejs git composer npm php-xml
+  sudo apt-get install build-essential gcc g++ make nodejs git npm apache2
 else
   exit
 fi
@@ -152,13 +153,16 @@ echo -e "\nInstalling Mysql"
 if yesno --default yes "Continue? [Y/n] "; then
   RUNLEVEL=1
 
-  # Ugly workaround for /etc/profile.d/wsl-integration.sh, see
-  # https://github.com/wslutilities/wslu/issues/101
-  sudo mkdir //.cache
+  if [[ "${VER}" == "18.04.03" ]]
+    # Ugly workaround for /etc/profile.d/wsl-integration.sh, see
+    # https://github.com/wslutilities/wslu/issues/101
+    sudo mkdir //.cache
+  fi
 
   sudo apt install mysql-server
 
   # Correct the HOME issue
+  # https://github.com/wslutilities/wslu/issues/101
   sudo usermod -d /var/lib/mysql/ mysql
 
   sudo service mysql start
@@ -168,8 +172,28 @@ if yesno --default yes "Continue? [Y/n] "; then
     sudo mysql_secure_installation
     sudo service mysql stop
   fi
-  sudo rm -rf //.cache
+  if [[ "${VER}" == "18.04.03" ]]
+    sudo rm -rf //.cache
+  fi
+
   sudo apt-get install php-mysql
+fi
+
+# PHP 8.1
+echo -e "\nInstalling PHP 8.1"
+if yesno --default yes "Continue? [Y/n] "; then
+  sudo apt install php8.1
+  sudo apt-get install -y php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath libapache2-mod-php php-mysql
+  php8 -v
+fi
+
+# Composer 2
+echo -e "\nInstalling Composer 2.x"
+if yesno --default yes "Continue? [Y/n] "; then
+  curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
+  HASH=`curl -sS https://composer.github.io/installer.sig`
+  php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+  sudo php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
 fi
 
 # wp-cli
@@ -181,6 +205,15 @@ if [[ ! -x "$(command -v wp)" ]]; then
     sudo mv wp-cli.phar /usr/local/bin/wp
     wp --info
   fi
+fi
+
+# Webmin
+echo -e "\nInstalling Webmin"
+if yesno --default yes "Continue? [Y/n] "; then
+  curl -fsSL https://download.webmin.com/jcameron-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/webmin.gpg
+  echo 'deb [signed-by=/usr/share/keyrings/webmin.gpg] http://download.webmin.com/download/repository sarge contrib' >> /etc/apt/sources.list
+  sudo apt update
+  sudo apt install webmin
 fi
 
 # Fix weird write issue with git vs. wsl
