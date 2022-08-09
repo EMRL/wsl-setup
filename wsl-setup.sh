@@ -1,4 +1,3 @@
-  
 #!/usr/bin/env bash
 #
 # wsl-setup.sh
@@ -118,6 +117,87 @@ function yesno() {
   [[ "${ans}" = "y" || "${ans}" == "yes" ]]
 }
 
+function install_git() {
+  # Git
+  echo -e "\nConfiguring git"
+  read -rp "Full name: " git_name
+  read -rp "Email address: " git_email
+  if [[ -z "${git_name}" ]] || [[ -z "${git_email}" ]]; then
+    echo "Skipping git configuration"
+  else
+    git config --global user.name "${git_name}"
+    git config --global user.email "${git_email}"
+  fi
+}
+
+function install_mariadb() {
+  if yesno --default yes "Continue? [Y/n] "; then
+    sudo apt-get update
+    sudo apt-get install mariadb-server
+    sudo service mysql start
+    sudo service mysql status
+    status=$?
+    if [[ "${status}" == "0" ]]; then
+      sudo mysql_secure_installation
+      sudo service mysql stop
+    fi
+  fi
+}
+
+function install_php() {
+  if yesno --default yes "Continue? [Y/n] "; then
+    sudo apt-get install lsb-release ca-certificates apt-transport-https software-properties-common -y
+    sudo add-apt-repository ppa:ondrej/php 
+    sudo add-apt-repository ppa:ondrej/apache2
+    sudo apt-get update
+    sudo apt-get install php8.1 -y
+    sudo apt-get install -y php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath libapache2-mod-php php-mysql php-pear -y
+    php -v
+  fi
+}
+
+function install_composer() {
+  if yesno --default yes "Continue? [Y/n] "; then
+    curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
+    HASH=`curl -sS https://composer.github.io/installer.sig`
+    php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
+    sudo php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
+  fi
+}
+
+function install_wpcli() {
+  if [[ ! -x "$(command -v wp)" ]]; then
+    echo ""
+    if yesno --default yes "Install wp-cli? [Y/n] "; then
+      wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
+      sudo chmod u+x wp-cli.phar
+      sudo mv wp-cli.phar /usr/local/bin/wp
+      wp --info
+    fi
+  fi
+}
+
+function install_webmin() {
+  if yesno --default yes "Continue? [Y/n] "; then
+    curl -fsSL https://download.webmin.com/jcameron-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/webmin.gpg
+    echo 'deb [signed-by=/usr/share/keyrings/webmin.gpg] http://download.webmin.com/download/repository sarge contrib' >> /etc/apt/sources.list
+    sudo apt update
+    sudo apt install webmin -y
+  fi
+}
+
+function install_sshkey() {
+  echo ""
+  if yesno --default yes "Generate ssh key? [Y/n] "; then
+    ssh-keygen -t rsa -b 4096
+    echo ""
+    tail ~/.ssh/id_rsa.pub
+    echo -e "\nAdd the key above at the following URLs:"
+    echo "https://github.com/settings/keys"
+    echo "https://bitbucket.org/account/settings/ssh-keys/"
+  fi
+}
+
 # Begin app
 check_os
 if [[ -n "${OS}" ]] && [[ -n "${VER}" ]]; then
@@ -128,123 +208,41 @@ else
   exit 1
 fi
 
-# Get started
+# Get started, install the basics
 if yesno --default yes "Continue? [Y/n] "; then
-  sudo apt update
-  sudo apt upgrade -y
-  sudo apt-get install build-essential gcc g++ make nodejs git npm apache2
+  sudo apt-get update
+  sudo apt-get upgrade -y
+  sudo apt-get install build-essential gcc g++ make nodejs git npm apache2 -y
 else
   exit
 fi
 
-# Git
-echo -e "\nConfiguring git"
-read -rp "Full name: " git_name
-read -rp "Email address: " git_email
-if [[ -z "${git_name}" ]] || [[ -z "${git_email}" ]]; then
-  echo "Skipping git configuration"
-else
-  git config --global user.name "${git_name}"
-  git config --global user.email "${git_email}"
-fi
+# Git, required so no y/n
+install_git
 
-# Mysql
-echo -e "\nInstalling Mysql"
-if yesno --default yes "Continue? [Y/n] "; then
-  RUNLEVEL=1
-
-  if [[ "${VER}" == "18.04.03" ]]
-    # Ugly workaround for /etc/profile.d/wsl-integration.sh, see
-    # https://github.com/wslutilities/wslu/issues/101
-    sudo mkdir //.cache
-  fi
-
-  sudo apt install mysql-server
-
-  # Correct the HOME issue
-  # https://github.com/wslutilities/wslu/issues/101
-  sudo usermod -d /var/lib/mysql/ mysql
-
-  sudo service mysql start
-  sudo service mysql status
-  status=$?
-  if [[ "${status}" == "0" ]]; then
-    sudo mysql_secure_installation
-    sudo service mysql stop
-  fi
-  if [[ "${VER}" == "18.04.03" ]]
-    sudo rm -rf //.cache
-  fi
-
-  sudo apt-get install php-mysql
-fi
+# MariaDB
+echo -e "\nInstalling MariaDB"; install_mariadb
 
 # PHP 8.1
-echo -e "\nInstalling PHP 8.1"
-if yesno --default yes "Continue? [Y/n] "; then
-  sudo apt install php8.1
-  sudo apt-get install -y php8.1-cli php8.1-common php8.1-mysql php8.1-zip php8.1-gd php8.1-mbstring php8.1-curl php8.1-xml php8.1-bcmath libapache2-mod-php php-mysql
-  php8 -v
-fi
+echo -e "\nInstalling PHP 8.1"; install_php
 
 # Composer 2
-echo -e "\nInstalling Composer 2.x"
-if yesno --default yes "Continue? [Y/n] "; then
-  curl -sS https://getcomposer.org/installer -o /tmp/composer-setup.php
-  HASH=`curl -sS https://composer.github.io/installer.sig`
-  php -r "if (hash_file('SHA384', '/tmp/composer-setup.php') === '$HASH') { echo 'Installer verified'; } else { echo 'Installer corrupt'; unlink('composer-setup.php'); } echo PHP_EOL;"
-  sudo php /tmp/composer-setup.php --install-dir=/usr/local/bin --filename=composer
-fi
+echo -e "\nInstalling Composer 2.x"; install_composer
 
 # wp-cli
-if [[ ! -x "$(command -v wp)" ]]; then
-  echo ""
-  if yesno --default yes "Install wp-cli? [Y/n] "; then
-    wget https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
-    sudo chmod u+x wp-cli.phar
-    sudo mv wp-cli.phar /usr/local/bin/wp
-    wp --info
-  fi
-fi
+install_wpcli
 
 # Webmin
-echo -e "\nInstalling Webmin"
-if yesno --default yes "Continue? [Y/n] "; then
-  curl -fsSL https://download.webmin.com/jcameron-key.asc | sudo gpg --dearmor -o /usr/share/keyrings/webmin.gpg
-  echo 'deb [signed-by=/usr/share/keyrings/webmin.gpg] http://download.webmin.com/download/repository sarge contrib' >> /etc/apt/sources.list
-  sudo apt update
-  sudo apt install webmin
-fi
+echo -e "\nInstalling Webmin"; install_webmin
 
-# Fix weird write issue with git vs. wsl
-echo ""
-if yesno --default yes "Applying filesystem fix? [Y/n] "; then
-  echo "[automount]" >> /tmp/wsl.conf
-  echo "options = \"metadata\"" >> /tmp/wsl.conf
-  sudo mv /tmp/wsl.conf /etc/wsl.conf
-fi
+# Install ssh key
+install_sshkey
 
-echo ""
-if yesno --default yes "Generate ssh key? [Y/n] "; then
-  ssh-keygen -t rsa -b 4096
-  echo ""
-  tail ~/.ssh/id_rsa.pub
-  echo -e "\nAdd the key above at the following URLs:"
-  echo "https://github.com/settings/keys"
-  echo "https://bitbucket.org/account/settings/ssh-keys/"
-fi
+# Clean up
+echo -e "\nCleaning up..."
+echo "[automount]" >> /tmp/wsl.conf
+echo "options = \"metadata\"" >> /tmp/wsl.conf
 
-# Fix for weird sleep issue
-if [[ "${OS}" == "Ubuntu" ]] && [[ "${VER}" == "20.04" ]]; then
-  echo -e "\n${OS} ${VER} has a bug in its implementation of the 'sleep' command."
-  echo "The fix involves downgrading a few libraries."
-  if yesno --default yes "Apply fix? [Y/n] "; then
-    wget https://launchpad.net/~rafaeldtinoco/+archive/ubuntu/lp1871129/+files/libc6_2.31-0ubuntu8+lp1871129~1_amd64.deb
-    sudo dpkg --install libc6_2.31-0ubuntu8+lp1871129~1_amd64.deb
-    sudo apt-mark hold libc6
-    sudo apt --fix-broken install
-    sudo apt full-upgrade
-  fi
-fi
-
+#Exit
 echo -e "\nReboot your computer or run 'wsl -t ${OS}' from your Windows CMD shell."
+exit 0
