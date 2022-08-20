@@ -212,7 +212,7 @@ fi
 if yesno --default yes "Continue? [Y/n] "; then
   sudo apt-get update
   sudo apt-get upgrade -y
-  sudo apt-get install build-essential gcc g++ make nodejs git npm apache2 -y
+  sudo apt-get install build-essential gcc g++ make nodejs git npm apache2 x11-apps -y
 else
   exit
 fi
