@@ -232,8 +232,8 @@ echo -e "\nInstalling Composer 2.x"; install_composer
 # wp-cli
 install_wpcli
 
-# Webmin
-echo -e "\nInstalling Webmin"; install_webmin
+# Webmin (Not working, disabled for now)
+# echo -e "\nInstalling Webmin"; install_webmin
 
 # Install ssh key
 install_sshkey
