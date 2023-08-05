@@ -6,8 +6,8 @@ This is just how we initially setup a WSL environment on our Windows workstation
 
 ### Enable WSL
 - Open PowerShell tool as an Administrator 
-- Enable WSL and install distro
-- `wsl --install`
+- Enable WSL and install distro by using the command `wsl --install`
+- Reboot computer
 - Launch Ubuntu shell
 - Create user/password
 
